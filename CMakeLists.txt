@@ -109,10 +109,11 @@ if (LINUX)
     if (FILAMENT_REQUIRES_CXXABI)
         # Required in CI environment with custom libc++ and libc++abi
         link_libraries("-lc++abi")
+        message("FILAMENT_REQUIRES_CXXABI enabled.")
     endif()
     # To distribute our binaries, we must remove the dependency on libc++ and libgcc.
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
-        link_libraries("-static-libgcc -static-libstdc++")
+        link_libraries("-static-libstdc++")
     endif()
 else()
     if (FILAMENT_REQUIRES_CXXABI)

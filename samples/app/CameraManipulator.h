@@ -57,7 +57,7 @@ private:
     math::double3 mTranslation;
 
     double mCenterOfInterest = 10.0;
-    double mFovx = 65.0;
+    double mFovx = 90.0;
     double mClipNear = 0.1;
     double mClipFar = 11.0;
     size_t mWidth;

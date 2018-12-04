@@ -57,7 +57,8 @@ public:
 
     void addFromFile(const utils::Path& path,
             std::map<std::string, filament::MaterialInstance*>& materials,
-            bool overrideMaterial = false);
+            bool overrideMaterial = false,
+            std::vector<utils::Entity> * new_entities = NULL);
 
     const std::vector<utils::Entity> getRenderables() const noexcept {
         return mRenderables;

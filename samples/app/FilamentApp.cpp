@@ -181,6 +181,7 @@ void FilamentApp::run(const Config& config, SetupCallback setupCallback,
         io.KeyMap[ImGuiKey_X] = SDL_SCANCODE_X;
         io.KeyMap[ImGuiKey_Y] = SDL_SCANCODE_Y;
         io.KeyMap[ImGuiKey_Z] = SDL_SCANCODE_Z;
+        io.KeyMap[ImGuiKey_Z] = SDL_SCANCODE_Z;
         io.SetClipboardTextFn = [](void*, const char* text) {
             SDL_SetClipboardText(text);
         };

@@ -221,6 +221,11 @@ MeshAssimp::MeshAssimp(Engine& engine) : mEngine(engine) {
     mDefaultTransparentColorMaterial->setDefaultParameter("baseColor", RgbType::LINEAR, float3{0.8});
     mDefaultTransparentColorMaterial->setDefaultParameter("metallic",  0.0f);
     mDefaultTransparentColorMaterial->setDefaultParameter("roughness", 0.4f);
+
+    TransformManager& tcm = mEngine.getTransformManager();
+    //Add root instance
+    EntityManager::get().create(1, &rootEntity);
+    tcm.create(rootEntity, TransformManager::Instance{}, mat4f());
 }
 
 MeshAssimp::~MeshAssimp() {
@@ -449,7 +454,8 @@ Box computeTransformedAABB(VECTOR const* vertices, INDEX const* indices, size_t 
 }
 
 void MeshAssimp::addFromFile(const Path& path,
-        std::map<std::string, MaterialInstance*>& materials, bool overrideMaterial) {
+        std::map<std::string, MaterialInstance*>& materials, bool overrideMaterial,
+        std::vector<utils::Entity> * new_entities) {
 
     std::vector<Mesh> meshes;
     std::vector<int> parents;
@@ -506,11 +512,8 @@ void MeshAssimp::addFromFile(const Path& path,
     size_t startIndex = mRenderables.size();
     mRenderables.resize(startIndex + meshes.size());
     EntityManager::get().create(meshes.size(), mRenderables.data() + startIndex);
-    EntityManager::get().create(1, &rootEntity);
 
     TransformManager& tcm = mEngine.getTransformManager();
-    //Add root instance
-    tcm.create(rootEntity, TransformManager::Instance{}, mat4f());
 
     for (auto& mesh : meshes) {
         RenderableManager::Builder builder(mesh.parts.size());
@@ -557,6 +560,9 @@ void MeshAssimp::addFromFile(const Path& path,
         TransformManager::Instance parent((pindex < 0) ?
                 tcm.getInstance(rootEntity) : tcm.getInstance(mRenderables[pindex]));
         tcm.create(entity, parent, mesh.transform);
+        if (new_entities){
+            new_entities->push_back(entity);
+        }
     }
 }
 

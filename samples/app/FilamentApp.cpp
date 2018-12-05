@@ -261,6 +261,25 @@ void FilamentApp::run(const Config& config, SetupCallback setupCallback,
                     if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                         mClosed = true;
                     }
+
+                    if (!io || !io->WantCaptureMouse){
+                        switch (event.key.keysym.sym){
+                            case SDLK_w:
+                                window->handleMoveKey(0.25, 0.);
+                                break;
+                            case SDLK_s:
+                                window->handleMoveKey(-0.25, 0.);
+                                break;
+                            case SDLK_a:
+                                window->handleMoveKey(0., -0.25);
+                                break;
+                            case SDLK_d:
+                                window->handleMoveKey(0., 0.25);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
                     break;
                 case SDL_MOUSEWHEEL:
                     if (!io || !io->WantCaptureMouse)
@@ -509,6 +528,19 @@ void FilamentApp::Window::mouseDown(int button, ssize_t x, ssize_t y) {
     }
 }
 
+void FilamentApp::Window::handleMoveKey(double fwd, double right) {
+    if (mEventTarget) {
+        mEventTarget->handleMoveKey(fwd, right);
+    } else {
+        for (auto const& view : mViews) {
+            if (view->intersects(mLastX, mLastY)) {
+                view->handleMoveKey(fwd, right);
+                break;
+            }
+        }
+    }
+}
+
 void FilamentApp::Window::mouseWheel(ssize_t x) {
     if (mEventTarget) {
         mEventTarget->mouseWheel(x);
@@ -635,6 +667,12 @@ void FilamentApp::CView::mouseDown(int button, ssize_t x, ssize_t y) {
 
 void FilamentApp::CView::mouseUp(ssize_t x, ssize_t y) {
     mMode = Mode::NONE;
+}
+
+void FilamentApp::CView::handleMoveKey(double fwd, double right) {
+    if (mCameraManipulator) {
+        mCameraManipulator->fly(right, 0, -fwd);
+    }
 }
 
 void FilamentApp::CView::mouseMoved(ssize_t x, ssize_t y) {

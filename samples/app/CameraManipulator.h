@@ -41,6 +41,7 @@ public:
 
     void setViewport(size_t w, size_t h);
 
+    void fly(double x, double y, double z);
     void lookAt(const math::double3& eye, const math::double3& at);
     void track(const math::double2& delta);
     void dolly(double delta, double dollySpeed = 5.0);

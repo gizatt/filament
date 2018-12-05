@@ -104,6 +104,7 @@ private:
         virtual void mouseUp(ssize_t x, ssize_t y);
         virtual void mouseMoved(ssize_t x, ssize_t y);
         virtual void mouseWheel(ssize_t x);
+        virtual void handleMoveKey(double fwd, double right);
 
         filament::View const* getView() const { return view; }
         filament::View* getView() { return view; }
@@ -141,6 +142,7 @@ private:
         void mouseUp(ssize_t x, ssize_t y);
         void mouseMoved(ssize_t x, ssize_t y);
         void mouseWheel(ssize_t x);
+        void handleMoveKey(double fwd, double right);
         void resize();
 
         filament::Renderer* getRenderer() { return mRenderer; }

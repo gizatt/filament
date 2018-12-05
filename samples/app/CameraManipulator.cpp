@@ -47,6 +47,13 @@ void CameraManipulator::setViewport(size_t w, size_t h) {
 }
 
 //------------------------------------------------------------------------------
+void CameraManipulator::fly(double x, double y, double z) {
+    double3 fly_vec = rotateVector(mRotation.x, mRotation.y, {x, y, z});
+    mTranslation += fly_vec;
+    updateCameraTransform();
+}
+
+//------------------------------------------------------------------------------
 void CameraManipulator::lookAt(const double3& eye, const double3& at) {
     mTranslation = eye;
     double3 dt = at - eye;

@@ -462,7 +462,7 @@ FilamentApp::Window::Window(FilamentApp* filamentApp,
 
     // set exposure
     for (auto camera : mCameras) {
-        camera->setExposure(16.0f, 1 / 125.0f, 100.0f);
+        camera->setExposure(12.0f, 1 / 2500.0f, 1000.0f);
     }
 
     // create views

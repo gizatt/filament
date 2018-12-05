@@ -527,6 +527,7 @@ void MeshAssimp::addFromFile(const Path& path,
             if (overrideMaterial) {
                 builder.material(partIndex, materials[AI_DEFAULT_MATERIAL_NAME]);
             } else {
+                std::cout << "Part material: " << part.material << std::endl;
                 auto pos = materials.find(part.material);
 
                 if (pos != materials.end()) {
@@ -767,6 +768,7 @@ bool MeshAssimp::setFromFile(const Path& file, std::vector<uint32_t>& outIndices
                                 baseColor = *reinterpret_cast<sRGBColor*>(&color);
                             } else {
                                 // TODO: the conversion formula is correct
+                                std::cerr << "HIT BAD CASE" << std::endl;
                                 // reflectance = sqrtf(color.r / 0.16f);
                             }
                         }

@@ -58,10 +58,10 @@ using namespace utils;
 static std::string default_scene_name;
 static utils::Path database_dir;
 
-static std::map<std::string, MaterialInstance*> g_materialInstances;
+static std::vector<std::map<std::string, MaterialInstance*>> g_materialInstancesInstances;
 static std::unique_ptr<MeshAssimp> g_meshSet;
 static const Material* g_material;
-static Entity g_light;
+static Entity g_light, g_light_2, g_light_3;
 
 static Config g_config;
 
@@ -108,9 +108,11 @@ static int handleCommandLineArgments(int argc, char* argv[], Config* config) {
 }
 
 static void cleanup(Engine* engine, View* view, Scene* scene) {
-    for (auto& item : g_materialInstances) {
-        auto materialInstance = item.second;
-        engine->destroy(materialInstance);
+    for (auto& g_materialInstances : g_materialInstancesInstances){
+        for (auto& item : g_materialInstances) {
+            auto materialInstance = item.second;
+            engine->destroy(materialInstance);
+        }
     }
     g_meshSet.reset(nullptr);
     engine->destroy(g_material);
@@ -138,11 +140,16 @@ static void setup(Engine* engine, View* view, Scene* scene) {
 
     // Load in each model in the scene
 
+    bool got_first_tf = false;
+    mat4f first_inv_tf;
     for (auto& model_instance : ssd_scene.getAllModels()) {
+        g_materialInstancesInstances.emplace_back();
+        auto& g_materialInstances = g_materialInstancesInstances.back(); 
         utils::Path full_model_path = database_dir + "models" +
-            (model_instance->GetModel().Hash() + ".obj");
+            (model_instance->GetModel().Hash() + ".gltf");
         std::cout << "Adding model with filename " << full_model_path << std::endl;
         std::vector<utils::Entity> new_entities;
+
         g_meshSet->addFromFile(full_model_path, g_materialInstances, false, &new_entities);
 
         if (new_entities.size() == 0){
@@ -152,39 +159,39 @@ static void setup(Engine* engine, View* view, Scene* scene) {
 
         // TF appropriately
         mat4f tf_out;
-        const auto * model_instance_iter = model_instance;
-        while (model_instance_iter != NULL){
-            auto tf_in = model_instance->GetTransform();
-            mat4f tf_tmp;
+        auto tf_in = model_instance->GetTransform();
+        for (int i=0; i<4; i++){
+            for (int j=0; j<4; j++){
+                tf_out[i][j] = tf_in[i][j];
+            }
+        }
+
+        auto rooti = tcm.getInstance(new_entities.back());
+        tcm.setTransform(rooti, tf_out);
+
+        if (!got_first_tf){
             Eigen::Matrix4f tf_eigen;
             for (int i=0; i<4; i++){
                 for (int j=0; j<4; j++){
-                    tf_eigen(i, j) = tf_in[i][j];
+                    tf_eigen(i, j) = tf_out[i][j];
                 }
-            }
-            /*
-            // Invert in-place
+            }            
             tf_eigen.block<3, 3>(0, 0) = tf_eigen.block<3, 3>(0, 0).inverse();
             tf_eigen.block<3, 1>(0, 3) = -tf_eigen.block<3, 3>(0, 0) * tf_eigen.block<3, 1>(0, 3);
-            tf_eigen(3, 3) = 1.;*/
-
+            tf_eigen(3, 3) = 1.;
             for (int i=0; i<4; i++){
                 for (int j=0; j<4; j++){
-                    tf_tmp[i][j] = tf_eigen(i, j);
+                    first_inv_tf[i][j] = tf_eigen(i, j);
                 }
             }
-            tf_out = tf_tmp * tf_out;
-            break; // don't take parent tfs into account...
-            model_instance_iter = model_instance_iter->GetParent();
+            got_first_tf = true;
         }
-        auto rooti = tcm.getInstance(new_entities.back());
-        tcm.setTransform(rooti, tf_out);
     }
 
     float maxExtent = 0;
     maxExtent = std::max(g_meshSet->maxBound.x - g_meshSet->minBound.x, g_meshSet->maxBound.y - g_meshSet->minBound.y);
     maxExtent = std::max(maxExtent, g_meshSet->maxBound.z - g_meshSet->minBound.z);
-    float scaleFactor = 2.0f / 100.;
+    float scaleFactor = 2.0f / 50.;
 
     float3 center = -1 * (g_meshSet->maxBound + g_meshSet->minBound) / 2.0f;
     center.z -= 4.0f / scaleFactor;
@@ -193,8 +200,15 @@ static void setup(Engine* engine, View* view, Scene* scene) {
 
     auto rooti = tcm.getInstance(g_meshSet->rootEntity);
     std::cout << "Rooti:" << rooti << std::endl;
-    std::cout << "TF: " << mat4f::scale(float3(scaleFactor)) * mat4f::translate(center) << std::endl;
-    tcm.setTransform(rooti, mat4f::scale(float3(scaleFactor)) * mat4f::translate(center));
+    mat4f scale_fix = mat4f::scale(float3(scaleFactor));
+    mat4f extra_rotate;
+    extra_rotate[1][1] = 0;
+    extra_rotate[1][2] = -1;
+    extra_rotate[2][1] = 1;
+    extra_rotate[2][2] = 0;
+    scale_fix *= extra_rotate;
+    std::cout << "TF: " <<  scale_fix << std::endl;
+    tcm.setTransform(rooti, scale_fix);
     
 
     for (auto renderable : g_meshSet->getRenderables()) {
@@ -209,12 +223,31 @@ static void setup(Engine* engine, View* view, Scene* scene) {
     g_light = EntityManager::get().create();
     LightManager::Builder(LightManager::Type::SUN)
             .color(Color::toLinear<ACCURATE>(sRGBColor(0.98f, 0.92f, 0.89f)))
-            .intensity(110000)
-            .direction({ 0.7, -1, -0.8 })
+            .intensity(50000)
+            .direction({ 0.1, -0.9, 0.1 })
             .sunAngularRadius(1.9f)
             .castShadows(true)
             .build(*engine, g_light);
     scene->addEntity(g_light);
+/*
+    g_light_2 = EntityManager::get().create();
+    LightManager::Builder(LightManager::Type::SUN)
+            .color(Color::toLinear<ACCURATE>(sRGBColor(0.98f, 0.92f, 0.89f)))
+            .intensity(110000)
+            .direction({ -0.7, 1, 0.8 })
+            .sunAngularRadius(1.9f)
+            .castShadows(true)
+            .build(*engine, g_light_2);
+    scene->addEntity(g_light_2);    
+
+    g_light_3 = EntityManager::get().create();
+    LightManager::Builder(LightManager::Type::SPOT)
+            .color(Color::toLinear<ACCURATE>(sRGBColor(0.98f, 0.92f, 0.89f)))
+            .intensity(100000)
+            .position({ 0., 0, 0. })
+            .castShadows(true)
+            .build(*engine, g_light_3);
+    scene->addEntity(g_light_3);    */
 }
 
 int main(int argc, char* argv[]) {
